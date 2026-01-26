@@ -1433,47 +1433,69 @@ namespace Site_View_v2
             var angle = Math.Atan2(tip.Y - from.Y, tip.X - from.X);
             var normal = left ? angle - Math.PI / 2 : angle + Math.PI / 2;
 
-            // Scale curve length based on line width for visibility
-            var curveExtent = Math.Max(25f, lineWidth * 4f);
-            var arrowSize = Math.Max(8f, lineWidth * 3.0f);
+            // Scale dimensions based on line width
+            var curveExtent = Math.Max(30f, lineWidth * 5f);
+            var arrowSize = Math.Max(10f, lineWidth * 3.5f);
+            var stemLength = curveExtent * 0.5f;
 
-            // Start the curve slightly back from the tip along the line
+            // Draw a short stem before the curve starts
+            var stemStart = new PointF(
+                (float)(tip.X - Math.Cos(angle) * (stemLength + curveExtent * 0.3f)),
+                (float)(tip.Y - Math.Sin(angle) * (stemLength + curveExtent * 0.3f)));
+
             var curveStart = new PointF(
                 (float)(tip.X - Math.Cos(angle) * curveExtent * 0.3f),
                 (float)(tip.Y - Math.Sin(angle) * curveExtent * 0.3f));
 
+            using (var p = new Pen(color, Math.Max(1f, lineWidth)))
+            {
+                p.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+                p.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+
+                // Draw the straight stem portion
+                g.DrawLine(p, stemStart, curveStart);
+            }
+
             // End point of the curve - perpendicular to the line direction
             var curveEnd = new PointF(
-                (float)(tip.X + Math.Cos(normal) * curveExtent),
-                (float)(tip.Y + Math.Sin(normal) * curveExtent));
+                (float)(tip.X + Math.Cos(normal) * curveExtent * 0.85f),
+                (float)(tip.Y + Math.Sin(normal) * curveExtent * 0.85f));
 
-            // Control points for a smooth 90-degree Bezier curve
-            // First control: continue in line direction from curve start
+            // Tight 90-degree Bezier curve control points
+            // First control: continue forward from curve start (creates the sharp turn apex)
             var ctrl1 = new PointF(
-                (float)(curveStart.X + Math.Cos(angle) * curveExtent * 0.7f),
-                (float)(curveStart.Y + Math.Sin(angle) * curveExtent * 0.7f));
+                (float)(curveStart.X + Math.Cos(angle) * curveExtent * 0.55f),
+                (float)(curveStart.Y + Math.Sin(angle) * curveExtent * 0.55f));
 
-            // Second control: approach curve end from perpendicular direction (back toward the line)
+            // Second control: positioned to create a tight corner
             var ctrl2 = new PointF(
-                (float)(curveEnd.X - Math.Cos(normal) * curveExtent * 0.5f),
-                (float)(curveEnd.Y - Math.Sin(normal) * curveExtent * 0.5f));
+                (float)(tip.X + Math.Cos(angle) * curveExtent * 0.15f + Math.Cos(normal) * curveExtent * 0.3f),
+                (float)(tip.Y + Math.Sin(angle) * curveExtent * 0.15f + Math.Sin(normal) * curveExtent * 0.3f));
 
-            // Draw the curved line
+            // Draw the curved portion
             using (var p = new Pen(color, Math.Max(1f, lineWidth)))
+            {
+                p.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+                p.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                 g.DrawBezier(p, curveStart, ctrl1, ctrl2, curveEnd);
+            }
 
-            // Arrow head pointing outward (perpendicular direction, away from the main line)
-            var wing = Math.PI / 6.5;
+            // Arrow head - chevron style pointing outward
+            var wing = Math.PI / 5.5; // slightly wider angle for better visibility
+            var headBase = new PointF(
+                (float)(curveEnd.X - Math.Cos(normal) * arrowSize * 0.9f),
+                (float)(curveEnd.Y - Math.Sin(normal) * arrowSize * 0.9f));
+
             var p1 = new PointF(
-                (float)(curveEnd.X - arrowSize * Math.Cos(normal) + arrowSize * 0.6f * Math.Cos(normal + wing)),
-                (float)(curveEnd.Y - arrowSize * Math.Sin(normal) + arrowSize * 0.6f * Math.Sin(normal + wing)));
+                (float)(headBase.X + arrowSize * 0.7f * Math.Cos(normal + wing)),
+                (float)(headBase.Y + arrowSize * 0.7f * Math.Sin(normal + wing)));
             var p2 = curveEnd;
             var p3 = new PointF(
-                (float)(curveEnd.X - arrowSize * Math.Cos(normal) + arrowSize * 0.6f * Math.Cos(normal - wing)),
-                (float)(curveEnd.Y - arrowSize * Math.Sin(normal) + arrowSize * 0.6f * Math.Sin(normal - wing)));
+                (float)(headBase.X + arrowSize * 0.7f * Math.Cos(normal - wing)),
+                (float)(headBase.Y + arrowSize * 0.7f * Math.Sin(normal - wing)));
 
             using var b = new SolidBrush(color);
-            using var pn = new Pen(color, lineWidth * 0.6f);
+            using var pn = new Pen(color, lineWidth * 0.5f);
             g.FillPolygon(b, new[] { p1, p2, p3 });
             g.DrawPolygon(pn, new[] { p1, p2, p3 });
         }
