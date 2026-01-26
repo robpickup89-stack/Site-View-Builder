@@ -51,6 +51,7 @@ namespace Site_View_v2
             this.DoubleBuffered = true;
             this.Text = "Site Viewer v2 (WinForms - .NET 8)";
             this.ClientSize = new System.Drawing.Size(1200, 800);
+            this.Icon = new System.Drawing.Icon("swarco.ico");
             this.Controls.Add(this.panelCanvasHost);
             this.Controls.Add(this.textBoxIni);
             this.Controls.Add(this.toolStrip1);
