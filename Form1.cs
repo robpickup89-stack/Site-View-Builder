@@ -1427,29 +1427,50 @@ namespace Site_View_v2
             g.DrawPolygon(p, new[] { p1, p2, p3 });
         }
 
-        // Turn arrows flipped 180° so they point away from the main line
+        // Turn arrows with a smooth curve that bends from the line direction
         private void DrawSideArrow(Graphics g, PointF from, PointF tip, float lineWidth, Color color, bool left)
         {
             var angle = Math.Atan2(tip.Y - from.Y, tip.X - from.X);
             var normal = left ? angle - Math.PI / 2 : angle + Math.PI / 2;
-            var size = Math.Max(8f, lineWidth * 2.8f);
 
-            var sideTip = new PointF(
-                (float)(tip.X + Math.Cos(normal) * size * 0.8f),
-                (float)(tip.Y + Math.Sin(normal) * size * 0.8f));
+            // Scale curve length based on line width for visibility
+            var curveExtent = Math.Max(25f, lineWidth * 4f);
+            var arrowSize = Math.Max(8f, lineWidth * 3.0f);
 
+            // Start the curve slightly back from the tip along the line
+            var curveStart = new PointF(
+                (float)(tip.X - Math.Cos(angle) * curveExtent * 0.3f),
+                (float)(tip.Y - Math.Sin(angle) * curveExtent * 0.3f));
+
+            // End point of the curve - perpendicular to the line direction
+            var curveEnd = new PointF(
+                (float)(tip.X + Math.Cos(normal) * curveExtent),
+                (float)(tip.Y + Math.Sin(normal) * curveExtent));
+
+            // Control points for a smooth 90-degree Bezier curve
+            // First control: continue in line direction from curve start
+            var ctrl1 = new PointF(
+                (float)(curveStart.X + Math.Cos(angle) * curveExtent * 0.7f),
+                (float)(curveStart.Y + Math.Sin(angle) * curveExtent * 0.7f));
+
+            // Second control: approach curve end from perpendicular direction (back toward the line)
+            var ctrl2 = new PointF(
+                (float)(curveEnd.X - Math.Cos(normal) * curveExtent * 0.5f),
+                (float)(curveEnd.Y - Math.Sin(normal) * curveExtent * 0.5f));
+
+            // Draw the curved line
             using (var p = new Pen(color, Math.Max(1f, lineWidth)))
-                g.DrawLine(p, tip, sideTip);
+                g.DrawBezier(p, curveStart, ctrl1, ctrl2, curveEnd);
 
-            // flipped 180° from normal
-            var headDirBase = normal + Math.PI;
+            // Arrow head pointing outward (perpendicular direction, away from the main line)
+            var wing = Math.PI / 6.5;
             var p1 = new PointF(
-                (float)(sideTip.X + Math.Cos(headDirBase + Math.PI / 7) * size),
-                (float)(sideTip.Y + Math.Sin(headDirBase + Math.PI / 7) * size));
-            var p2 = sideTip;
+                (float)(curveEnd.X - arrowSize * Math.Cos(normal) + arrowSize * 0.6f * Math.Cos(normal + wing)),
+                (float)(curveEnd.Y - arrowSize * Math.Sin(normal) + arrowSize * 0.6f * Math.Sin(normal + wing)));
+            var p2 = curveEnd;
             var p3 = new PointF(
-                (float)(sideTip.X + Math.Cos(headDirBase - Math.PI / 7) * size),
-                (float)(sideTip.Y + Math.Sin(headDirBase - Math.PI / 7) * size));
+                (float)(curveEnd.X - arrowSize * Math.Cos(normal) + arrowSize * 0.6f * Math.Cos(normal - wing)),
+                (float)(curveEnd.Y - arrowSize * Math.Sin(normal) + arrowSize * 0.6f * Math.Sin(normal - wing)));
 
             using var b = new SolidBrush(color);
             using var pn = new Pen(color, lineWidth * 0.6f);
